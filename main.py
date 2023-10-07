@@ -6,6 +6,7 @@ DRE: 116183736
 """
 
 import numpy as np
+import pandas as pd
 import re
 
 
@@ -29,24 +30,14 @@ def remove_stopwords(tokens_list, stopwords):
     ]
 
 
-def generate_inverted_index(tokens_list, terms):
-    inverted_index = []
-    simple_inverted_index = []
+def generate_frequency_matrix(tokens_list, terms):
+    frequency_matrix = pd.DataFrame(index=terms, columns=range(len(tokens_list)))
+    for document, col in frequency_matrix.items():
+        frequency_matrix[document] = col.index.to_series().apply(
+            lambda term: tokens_list[document].count(term)
+        )
 
-    for term in terms:
-        term_frequencies = []
-        term_found = []
-        for j, doc in enumerate(tokens_list):
-            frequency = doc.count(term)
-
-            if frequency:
-                term_frequencies.append((j, frequency))
-                term_found.append(j)
-
-        inverted_index.append(np.array(term_frequencies))
-        simple_inverted_index.append(np.array(term_found))
-
-    return inverted_index, simple_inverted_index
+    return frequency_matrix
 
 
 def arrays_intersection(arrays):
@@ -88,19 +79,20 @@ def main():
     tokens_list = np.array([tokenize(s, separators) for s in normalized], dtype=object)
     # rmv stopwords
     tokens_list = np.array(remove_stopwords(tokens_list, stopwords), dtype=object)
-    # # terms
-    terms = np.array([term for l in tokens_list for term in l])
+    # terms
+    terms = np.array(list(set([term for l in tokens_list for term in l])))
+    print(terms)
 
-    inverted_index, simple_inverted_index = generate_inverted_index(tokens_list, terms)
-    print(inverted_index)
+    frequency_matrix = generate_frequency_matrix(tokens_list, terms)
+    print(frequency_matrix)
 
-    # AND entre os termos da consulta
-    ands = arrays_intersection(simple_inverted_index)
-    print(f"AND = {ands}")
+    # # AND entre os termos da consulta
+    # ands = arrays_intersection(simple_inverted_index)
+    # print(f"AND = {ands}")
 
-    # OR entre os termos da consulta
-    ors = arrays_union(simple_inverted_index)
-    print(f"OR = {ors}")
+    # # OR entre os termos da consulta
+    # ors = arrays_union(simple_inverted_index)
+    # print(f"OR = {ors}")
 
 
 if __name__ == "__main__":
