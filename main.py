@@ -30,11 +30,11 @@ def remove_stopwords(tokens_list, stopwords):
     ]
 
 
-def generate_frequency_matrix(tokens_list, terms):
-    frequency_matrix = pd.DataFrame(index=terms, columns=range(len(tokens_list)))
-    for document, col in frequency_matrix.items():
-        frequency_matrix[document] = col.index.to_series().apply(
-            lambda term: tokens_list[document].count(term)
+def generate_frequency_matrix(documents, terms):
+    frequency_matrix = pd.DataFrame(index=terms, columns=range(len(documents)))
+    for term, row in frequency_matrix.iterrows():
+        frequency_matrix.loc[term] = row.index.to_series().apply(
+            lambda doc: documents[doc].count(term)
         )
 
     return frequency_matrix
@@ -81,7 +81,6 @@ def main():
     tokens_list = np.array(remove_stopwords(tokens_list, stopwords), dtype=object)
     # terms
     terms = np.array(list(set([term for l in tokens_list for term in l])))
-    print(terms)
 
     frequency_matrix = generate_frequency_matrix(tokens_list, terms)
     print(frequency_matrix)
