@@ -8,6 +8,7 @@ DRE: 116183736
 import numpy as np
 import pandas as pd
 import re
+import math
 
 
 def tokenize(s, separators):
@@ -26,33 +27,39 @@ def normalize(s):
 
 def remove_stopwords(tokens_list, stopwords):
     return [
-        [token for token in tokens if token not in stopwords] for tokens in tokens_list
+        np.array([token for token in tokens if token not in stopwords])
+        for tokens in tokens_list
     ]
 
 
-def generate_frequency_matrix(documents, terms):
-    frequency_matrix = pd.DataFrame(index=terms, columns=range(len(documents)))
-    for term, row in frequency_matrix.iterrows():
-        frequency_matrix.loc[term] = row.index.to_series().apply(
-            lambda doc: documents[doc].count(term)
-        )
-
-    return frequency_matrix
-
-
-def and_all(frequency_matrix):
-    return [
-        index
-        for index, value in enumerate(
-            frequency_matrix.all(axis=0).map(lambda x: 1 if x else 0).to_list()
-        )
-        if value > 0
-    ]
+def weigh_term(frequency, frequency_in_collection, N):
+    print(frequency, frequency_in_collection, N)
+    return (
+        1 + np.log2(frequency) * np.log2(N / frequency_in_collection)
+        if frequency > 0
+        else 0
+    )
 
 
-def or_all(frequency_matrix):
-    max_frequencies = frequency_matrix.max()
-    return [index for index, value in enumerate(max_frequencies) if value > 0]
+def weigh_row(row, documents, term):
+    frequencies = np.array(
+        list(map(lambda doc: np.count_nonzero(doc == term), documents))
+    )
+    frequency_in_collection = np.count_nonzero(np.concatenate(documents) == term)
+    N = len(row.index)
+    print(frequencies)
+    weights = pd.Series(frequencies).apply(
+        weigh_term, args=(frequency_in_collection, N)
+    )
+    return weights
+
+
+def generate_tfidf_matrix(documents, terms):
+    tfidf_matrix = pd.DataFrame(index=terms, columns=range(len(documents)))
+    for term, row in tfidf_matrix.iterrows():
+        tfidf_matrix.loc[term] = weigh_row(row, documents, term)
+
+    return tfidf_matrix
 
 
 def main():
@@ -76,19 +83,12 @@ def main():
     # tokenize
     tokens_list = np.array([tokenize(s, separators) for s in normalized], dtype=object)
     # rmv stopwords
-    tokens_list = np.array(remove_stopwords(tokens_list, stopwords), dtype=object)
+    tokens_list = remove_stopwords(tokens_list, stopwords)
     # terms
     terms = np.array(list(set([term for l in tokens_list for term in l])))
 
-    frequency_matrix = generate_frequency_matrix(tokens_list, terms)
-
-    # # AND entre os termos da consulta
-    ands = and_all(frequency_matrix)
-    print(f"AND = {ands}")
-
-    # OR entre os termos da consulta
-    ors = or_all(frequency_matrix)
-    print(f"OR = {ors}")
+    tfidf_matrix = generate_tfidf_matrix(tokens_list, terms)
+    print(tfidf_matrix)
 
 
 if __name__ == "__main__":
