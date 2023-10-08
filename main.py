@@ -40,33 +40,31 @@ def generate_frequency_matrix(documents, terms):
     return frequency_matrix
 
 
-def arrays_intersection(arrays):
-    intersection = arrays[0]
+def and_all(frequency_matrix):
+    return [
+        index
+        for index, value in enumerate(
+            frequency_matrix.all(axis=0).map(lambda x: 1 if x else 0).to_list()
+        )
+        if value > 0
+    ]
 
-    for arr in arrays[1:]:
-        intersection = np.intersect1d(intersection, arr)
 
-    return intersection
-
-
-def arrays_union(arrays):
-    union = arrays[0]
-
-    for arr in arrays[1:]:
-        union = np.union1d(union, arr)
-
-    return union
+def or_all(frequency_matrix):
+    max_frequencies = frequency_matrix.max()
+    return [index for index, value in enumerate(max_frequencies) if value > 0]
 
 
 def main():
     # input
+    # documentos
     dictionary = np.array(
         [
             "O peã e o caval são pec de xadrez. O caval é o melhor do jog.",
             "A jog envolv a torr, o peã e o rei.",
             "O peã lac o boi",
             "Caval de rodei!",
-            "Polic o jog no xadrez.",  # documentos
+            "Polic o jog no xadrez.",
         ]
     )
     stopwords = ["a", "o", "e", "é", "de", "do", "no", "são"]  # lista de stopwords
@@ -83,15 +81,14 @@ def main():
     terms = np.array(list(set([term for l in tokens_list for term in l])))
 
     frequency_matrix = generate_frequency_matrix(tokens_list, terms)
-    print(frequency_matrix)
 
     # # AND entre os termos da consulta
-    # ands = arrays_intersection(simple_inverted_index)
-    # print(f"AND = {ands}")
+    ands = and_all(frequency_matrix)
+    print(f"AND = {ands}")
 
-    # # OR entre os termos da consulta
-    # ors = arrays_union(simple_inverted_index)
-    # print(f"OR = {ors}")
+    # OR entre os termos da consulta
+    ors = or_all(frequency_matrix)
+    print(f"OR = {ors}")
 
 
 if __name__ == "__main__":
