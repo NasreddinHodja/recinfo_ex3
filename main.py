@@ -60,7 +60,7 @@ def generate_tfidf_matrix(documents, terms):
 
 
 def similarity(document, query):
-    return document.dot(query) / np.linalg.norm(document) * np.linalg.norm(query)
+    return document.dot(query) / (np.linalg.norm(document) * np.linalg.norm(query))
 
 
 def rank(documents, query):
@@ -97,7 +97,6 @@ def main():
 
     tfidf_matrix = generate_tfidf_matrix(tokens_list, terms)
     query_weights = generate_tfidf_matrix(query, terms)
-
     ranked_documents = rank(tfidf_matrix, query_weights)
     print(ranked_documents)
 
