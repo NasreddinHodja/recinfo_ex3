@@ -21,8 +21,7 @@ def tokenize(s, separators):
 
 
 def normalize(s):
-    normalized = s.lower().strip()
-    return normalized
+    return s.lower().strip()
 
 
 def remove_stopwords(tokens_list, stopwords):
@@ -33,7 +32,6 @@ def remove_stopwords(tokens_list, stopwords):
 
 
 def weigh_term(frequency, frequency_in_collection, N):
-    print(frequency, frequency_in_collection, N)
     return (
         1 + np.log2(frequency) * np.log2(N / frequency_in_collection)
         if frequency > 0
@@ -47,7 +45,6 @@ def weigh_row(row, documents, term):
     )
     frequency_in_collection = np.count_nonzero(np.concatenate(documents) == term)
     N = len(row.index)
-    print(frequencies)
     weights = pd.Series(frequencies).apply(
         weigh_term, args=(frequency_in_collection, N)
     )
@@ -62,8 +59,18 @@ def generate_tfidf_matrix(documents, terms):
     return tfidf_matrix
 
 
+def similarity(document, query):
+    return document.dot(query) / np.linalg.norm(document) * np.linalg.norm(query)
+
+
+def rank(documents, query):
+    ranked_documents = (
+        documents.apply(similarity, args=(query,)).T[0].sort_values(ascending=False)
+    )
+    return np.array(ranked_documents.index)
+
+
 def main():
-    # input
     # documentos
     dictionary = np.array(
         [
@@ -85,10 +92,14 @@ def main():
     # rmv stopwords
     tokens_list = remove_stopwords(tokens_list, stopwords)
     # terms
-    terms = np.array(list(set([term for l in tokens_list for term in l])))
+    terms = np.array(sorted(list(set([term for l in tokens_list for term in l]))))
+    query = np.array([query.split()])
 
     tfidf_matrix = generate_tfidf_matrix(tokens_list, terms)
-    print(tfidf_matrix)
+    query_weights = generate_tfidf_matrix(query, terms)
+
+    ranked_documents = rank(tfidf_matrix, query_weights)
+    print(ranked_documents)
 
 
 if __name__ == "__main__":
